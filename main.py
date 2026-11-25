@@ -85,17 +85,19 @@ MIN_PLATFORM_WIDTH = 10
 # User-adjustable settings
 # key, label, min, max, step, format
 SETTING_DEFS = [
-    ("horizontal_speed", "Run speed (px/s)",     100,  3000, 50,   "%d"),
-    ("jump_speed",       "Jump speed (px/s)",    500,  6000, 50,   "%d"),
-    ("fast_fall",        "Fast-fall (px/frame)", 0,    40,   1,    "%d"),
-    ("size",             "Size",                 0.25, 4.0,  0.05, "%.2fx"),
-    ("target_fps",       "Target FPS",           30,   240,  10,   "%d"),
-    ("screenshot_delay", "Screenshot delay (s)", 0.01, 1.0,  0.01, "%.2f"),
+    ("horizontal_speed", "Run speed (px/s)",     100,  3000,  50,   "%d"),
+    ("jump_speed",       "Jump speed (px/s)",    500,  6000,  50,   "%d"),
+    ("gravity",          "Gravity (px/s²)",      500,  30000, 250,  "%d"),
+    ("fast_fall",        "Fast-fall (px/frame)", 0,    40,    1,    "%d"),
+    ("size",             "Size",                 0.25, 4.0,   0.05, "%.2fx"),
+    ("target_fps",       "Target FPS",           30,   240,   10,   "%d"),
+    ("screenshot_delay", "Screenshot delay (s)", 0.01, 1.0,   0.01, "%.2f"),
 ]
 
 DEFAULTS = {
     "horizontal_speed": 1000,
     "jump_speed": 2600,
+    "gravity": GRAVITY,
     "fast_fall": 10,
     "size": 1.0,
     "target_fps": 120,
@@ -172,7 +174,7 @@ PX = UI_C / SCALE
 def sprite_scale(): return S["size"] * PX
 def hspeed():       return S["horizontal_speed"] * PX
 def vspeed():       return S["jump_speed"] * PX
-def gravity():      return -GRAVITY * PX
+def gravity():      return -S["gravity"] * PX
 def fast_fall():    return S["fast_fall"] * PX
 def foot_inset():   return FOOT_INSET * sprite_scale()
 
