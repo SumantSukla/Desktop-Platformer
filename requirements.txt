@@ -1,0 +1,5 @@
+raylib
+pyautogui
+opencv-python
+numpy
+pyobjc-framework-Cocoa; sys_platform == "darwin"

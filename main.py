@@ -85,17 +85,19 @@ MIN_PLATFORM_WIDTH = 10
 # User-adjustable settings
 # key, label, min, max, step, format
 SETTING_DEFS = [
-    ("horizontal_speed", "Run speed (px/s)",     100, 3000, 50,   "%d"),
-    ("jump_speed",       "Jump speed (px/s)",    500, 6000, 50,   "%d"),
-    ("fast_fall",        "Fast-fall (px/frame)", 0,   40,   1,    "%d"),
-    ("target_fps",       "Target FPS",           30,  240,  10,   "%d"),
-    ("screenshot_delay", "Screenshot delay (s)", 0.01, 1.0, 0.01, "%.2f"),
+    ("horizontal_speed", "Run speed (px/s)",     100,  3000, 50,   "%d"),
+    ("jump_speed",       "Jump speed (px/s)",    500,  6000, 50,   "%d"),
+    ("fast_fall",        "Fast-fall (px/frame)", 0,    40,   1,    "%d"),
+    ("size",             "Size",                 0.25, 4.0,  0.05, "%.2fx"),
+    ("target_fps",       "Target FPS",           30,   240,  10,   "%d"),
+    ("screenshot_delay", "Screenshot delay (s)", 0.01, 1.0,  0.01, "%.2f"),
 ]
 
 DEFAULTS = {
     "horizontal_speed": 1000,
     "jump_speed": 2600,
     "fast_fall": 10,
+    "size": 1.0,
     "target_fps": 120,
     "screenshot_delay": 0.1,
 }
@@ -114,7 +116,7 @@ def load_settings():
         v = data.get(key)
         if isinstance(v, (int, float)) and not isinstance(v, bool):
             v = min(max(v, lo), hi)
-            S[key] = int(round(v)) if isinstance(step, int) else float(v)
+            S[key] = int(round(v)) if isinstance(step, int) else round(float(v), 4)
 
 
 def save_settings():
@@ -167,11 +169,12 @@ UI_C = min(max(detect_ui_scale(), 1.0), 4.0)
 PX = UI_C / SCALE
 
 
-def hspeed():    return S["horizontal_speed"] * PX
-def vspeed():    return S["jump_speed"] * PX
-def gravity():   return -GRAVITY * PX
-def fast_fall(): return S["fast_fall"] * PX
-def foot_inset(): return FOOT_INSET * PX
+def sprite_scale(): return S["size"] * PX
+def hspeed():       return S["horizontal_speed"] * PX
+def vspeed():       return S["jump_speed"] * PX
+def gravity():      return -GRAVITY * PX
+def fast_fall():    return S["fast_fall"] * PX
+def foot_inset():   return FOOT_INSET * sprite_scale()
 
 
 # App icon
@@ -185,7 +188,7 @@ set_config_flags(FLAG_TRANSPARENT | FLAG_UNDECORATED | FLAG_TOPMOST | FLAG_MOUSE
 init_window(screen_w, screen_h, APP_NAME)
 set_window_position(0, 0)
 set_target_fps(S["target_fps"])
-set_exit_key(0) 
+set_exit_key(0)
 
 
 def set_app_icon(path):
@@ -221,12 +224,17 @@ class Anim:
         # raw pixel size (needed for frame offsets in upload())
         self.width = self.img.width
         self.height = self.img.height
-        # logical size (what we actually draw at)
-        self.draw_width = self.width * PX
-        self.draw_height = self.height * PX
         self.frame = 0
         self.timer = 0
         self.upload()
+
+    @property
+    def draw_width(self):
+        return self.width * sprite_scale()
+
+    @property
+    def draw_height(self):
+        return self.height * sprite_scale()
 
     @property
     def frame_time(self):
@@ -272,8 +280,14 @@ class Sprite:
     def image(self, img):
         self._image = img
         img.reset()
-        self.width = img.draw_width
-        self.height = img.draw_height
+
+    @property
+    def width(self):
+        return self._image.draw_width
+
+    @property
+    def height(self):
+        return self._image.draw_height
 
     def draw(self):
         # sprite coords are screen coords; convert to window-local coords.
@@ -282,7 +296,7 @@ class Sprite:
             self.image.texture,
             Vector2(int(self.x - win.x), int(screen_h - self.y - self.height - win.y)),
             0.0,
-            PX,
+            sprite_scale(),
             WHITE,
         )
 
@@ -466,7 +480,8 @@ def sprite_hit(mx, my):
     ly = my - (screen_h - sprite.y - sprite.height)
     if lx < 0 or ly < 0 or lx >= sprite.width or ly >= sprite.height:
         return False
-    return sprite.image.alpha_at(int(lx / PX), int(ly / PX)) > 20
+    scale = sprite_scale()
+    return sprite.image.alpha_at(int(lx / scale), int(ly / scale)) > 20
 
 
 def handle_mouse():
@@ -494,7 +509,7 @@ def handle_mouse():
             sprite.x = min(max(x, -inset), W - sprite.width + inset)
             sprite.y = min(max(y, 0), screen_h - sprite.height)
         else:
-            dragging = False   
+            dragging = False
         return
 
     hover = sprite_hit(mx, my)
@@ -592,6 +607,9 @@ def close_settings():
 
 def apply_settings():
     set_target_fps(int(S["target_fps"]))
+    inset = foot_inset()
+    sprite.x = min(max(sprite.x, -inset), W - sprite.width + inset)
+    sprite.y = min(max(sprite.y, 0), screen_h - sprite.height)
 
 
 def draw_slider(x, y, w, key, label, lo, hi, step, fmt):
