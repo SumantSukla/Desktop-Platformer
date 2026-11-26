@@ -24,7 +24,7 @@ In the background, the app takes quick screenshots and uses OpenCV edge detectio
 
 - Menu / Settings: Right-click the character to tweak speed, gravity, size, FPS, and more (saved automatically)
 
-## Demo
+## Watch the Demo on YouTube
 [![Watch the demo](assets/thumbnail.gif)](https://youtu.be/9kWXviMXn8c)
 
 ## Setup & Run
