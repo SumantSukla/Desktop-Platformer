@@ -1,3 +1,5 @@
+# Welcome to my code, fellow traveler!
+
 import sys
 import ctypes
 
@@ -5,9 +7,6 @@ APP_NAME = "Desktop Platformer"
 
 
 def enable_dpi_awareness():
-    """Windows: opt out of DPI virtualisation. This must happen before anything
-    queries the screen size or creates a window; otherwise Windows reports
-    scaled-down sizes while screenshots come back at full resolution."""
     if sys.platform != 'win32':
         return
     try:
@@ -319,10 +318,9 @@ vy = 0
 DIR = 1  # Direction: -1 for left, 1 for right
 
 # History of where the sprite was drawn, so the capture thread can mask it out
-# at the moment the screenshot was actually taken (not when it started).
 sprite_history = deque(maxlen=240)
 history_lock = threading.Lock()
-SCREENSHOT_LAG = 0.05   # seconds of slack for compositor / capture latency
+SCREENSHOT_LAG = 0.05   # capture latency
 
 
 def record_sprite():
@@ -342,7 +340,7 @@ def get_platforms():
 
     while True:
         # Don't scan while our own menu/settings panel is on screen, otherwise
-        # its edges would turn into platforms. The last good map is kept.
+        # its edges would turn into platforms. The last map is kept.
         if ui_state is not None:
             sleep(0.05)
             continue
@@ -364,7 +362,7 @@ def get_platforms():
                 cv2.MORPH_RECT, (MIN_PLATFORM_WIDTH, 1))
             clean_edges = cv2.morphologyEx(bridged_edges, cv2.MORPH_OPEN, open_kernel)
 
-            # --- remove the sprite's area ---
+            # remove the sprite's area
             img_h, img_w = clean_edges.shape
             scale_x = img_w / screen_w     # 2.0 on a Retina display, 1.0 otherwise
             scale_y = img_h / screen_h
@@ -390,9 +388,9 @@ def get_platforms():
                 y0, y1 = max(0, y0), min(img_h, y1)
                 clean_edges[y0:y1, x0:x1] = 0
 
-            # shrink to logical resolution; INTER_AREA keeps thin lines (any coverage -> nonzero)
+            # shrink to logical resolution
             small = cv2.resize(clean_edges, (screen_w, screen_h), interpolation=cv2.INTER_AREA)
-            if ui_state is None:   # UI may have opened while we were working
+            if ui_state is None:  
                 binary_array = (small > 0).astype(np.uint8)
                 H, W = binary_array.shape   # now screen_h, screen_w
 
@@ -440,13 +438,8 @@ thread = threading.Thread(target=get_platforms, daemon=True)
 thread.start()
 
 
-# ---------------------------------------------------------------------------
-# Mouse: the window is click-through everywhere except over the sprite's
-# opaque pixels (and while a menu is open), where passthrough is turned off so
-# it can receive clicks. While passthrough is on the window gets no mouse
-# events, so the cursor is read from the OS (pyautogui.position(), logical
-# screen coords, top-left origin).
-# ---------------------------------------------------------------------------
+# Mouse clickability and dragging settings
+
 passthrough = True
 dragging = False
 drag_dx = 0
@@ -491,11 +484,9 @@ def handle_mouse():
     global menu_x, menu_y, cur_mx, cur_my, cursor_want
 
     mx, my = pyautogui.position()
-    cur_mx, cur_my = mx / UI_C, my / UI_C   # the UI works in scaled "logical" units
+    cur_mx, cur_my = mx / UI_C, my / UI_C  
     cursor_want = CURSOR_DEFAULT
 
-    # A menu/settings panel is open: the whole overlay is modal and the UI
-    # code (ui_frame, called while drawing) handles everything
     if ui_state is not None:
         dragging = False
         set_passthrough(False)
